@@ -1,3 +1,4 @@
+#include <dirent.h>
 
 class response 
 {
@@ -6,22 +7,44 @@ class response
         bool		first_time;
 		std::string response_header;
 		std::string file_path;
-        void    set_header(std::string file, int status, ws::HttpRequest req)
+		std::string dir_body;
+        void    set_header(std::string file, int status, ws::HttpRequest req, bool dir)
         {
+
 			this->first_time = true;
 			this->file_path = file;
+			if (dir)
+				setDirheader();
 			if (status != 200)
 				get_path(status);
 			std::ostringstream oss;
 			oss << req.version + response_message(status);
 			oss << "Date: " << getCurrentDate() << "\r\n";
-			oss << "Content-Type: " <<  check_MIME(file_path) << "\r\n";
-			oss << "Content-Length: " << get_size(file_path) << "\r\n";
+			oss << "Content-Type: " <<  check_MIME(file_path, dir) << "\r\n";
+			if (!dir)
+				oss << "Content-Length: " << get_size(file_path) << "\r\n";
+			else
+				oss << "Content-Length: " << dir_body.length() << "\r\n";
 			oss << "\r\n";
 			this->response_header = oss.str();
 			std::cout << response_header;
         }
     private :
+		void	setDirheader()
+		{
+			DIR *dire;
+			dire = opendir(file_path.c_str());
+			struct dirent *ent;
+			std::ostringstream oss;
+			oss << "<ul>\n";
+			while ((ent = readdir(dire)) != NULL) {
+				oss << "  <li><a href=\"" << ent->d_name << "\">" << ent->d_name << "</a></li>\n";
+			}
+			oss << "</ul>\n";
+			this->dir_body = oss.str();
+			closedir(dire);
+		}
+
 		void	get_path(int status)
 		{
 			if (status == 301)
@@ -46,11 +69,12 @@ class response
 				this->file_path = "./Assets/Errors/501.html";
 			if (status == 502)
 				this->file_path = "./Assets/Errors/502.html";
-			
 		}
 
-		std::string check_MIME(std::string &file)
+		std::string check_MIME(std::string &file, bool dir)
 		{
+			if (dir)
+				return "text/html";
 			if (file.find_last_of('.') != std::string::npos)
 			{
 				std::string tmp = file.substr(file.find_last_of('.'), file.length());

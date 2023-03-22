@@ -16,7 +16,8 @@ namespace ws
         bool Boundary;
         std::string Boundary_token;
         bool headers_complet;
-        HttpRequest() : chunked(false), deja(false), con(false), end_(false), Boundary(false), headers_complet(false) {}
+        bool ENTER;
+        HttpRequest() : chunked(false), deja(false), con(false), end_(false), Boundary(false), headers_complet(false), ENTER(false) {}
     };
 }
 #include "boundary.hpp"
@@ -40,6 +41,7 @@ namespace ws
         req.end_ = 0;
         req.Boundary = 0;
         req.headers_complet = false;
+        req.ENTER = 0;
     }
 
     bool bodyParsing(HttpRequest &req, std::string &body, bool the_end)

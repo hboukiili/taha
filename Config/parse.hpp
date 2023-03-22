@@ -49,13 +49,12 @@ namespace ws
 		std::map<std::string, location> _location;
 		bool checker_flag;
 		int status;
-		ws::HttpRequest req;
 		std::string body;
 		std::string path;
 		response _response;
-		// bool										big;
 		int i;
 		int fd;
+		bool dir;
 
 		std::map<std::string, location>::iterator locationChecker(std::string path, std::map<std::string, location> &Location)
 		{
@@ -76,13 +75,10 @@ namespace ws
 			size_t n = pathComponents.size() - 1;
 			for (; n > 0; n--) // check if one of the pathComponents is exiting on the server(location)
 			{
-				// std::cout << pathComponents[n] << std::endl;
 				it = Location.find(pathComponents[n]);
 				if (it != Location.end())
 					return it;
 			}
-			// std::cout << "hahahahah " << pathComponents[0] << std::endl;
-			// std::cout << "=-==-=-=-=-=" << Location["/"].get_root() << std::endl;
 			return Location.find("/"); // if isn't exist we return end of map
 		}
 
@@ -108,14 +104,9 @@ namespace ws
 					std::cout << "directory \n";
 					if (req.path.back() != '/')
 						status = 301;
-					if (!access(file.c_str(), R_OK))
-					{
-					}
-					else
-					{
-						// return ;
-					}
-					return;
+					if (access(file.c_str(), R_OK))
+						status = 402;
+					dir = true;
 				}
 				status = 200;
 				return;
@@ -124,6 +115,11 @@ namespace ws
 		}
 
 	public:
+		server(){
+			status = 0;
+			i = 0;
+		}
+		ws::HttpRequest req;
 		int flg;
 		std::string const &get_port() const { return this->port; }
 		int const &getSocket() const { return this->socket; }
@@ -186,7 +182,6 @@ namespace ws
 			std::cout << "_checker was good\n";
 			if (req.method == "GET" && !status)
 				getMethod(it->first);
-			i = 0;
 			// else if (req.method == "POST" && !status)
 			//     status =  PostMethod();
 			// else if (req.method == "DELETE" && !status)
@@ -201,11 +196,20 @@ namespace ws
 		{
 			if (!_response.first_time)
 			{
-				this->_response.set_header(this->path, status, req);
+				this->_response.set_header(this->path, status, req, dir);
 				send(this->socket, _response.response_header.c_str(), _response.response_header.length(), 0);
-				fd = open(_response.file_path.c_str(), O_RDONLY);
-				std::cerr << "=-=-=file = " << _response.file_path << std::endl;
+				if (!dir)
+					fd = open(_response.file_path.c_str(), O_RDONLY);
+				std::cout << "=-=-=file = " << _response.file_path << "   " << this->socket << std::endl;
 				this->_response.done = false;
+			}
+			if (dir)
+			{
+				send(this->socket, _response.dir_body.c_str(), _response.dir_body.length(), 0);
+				this->_response.done = true;
+				this->_response.first_time = false;
+				status = 0;
+				return ;
 			}
 			char buffer[1024];
 			lseek(fd, i, SEEK_SET);
@@ -219,7 +223,6 @@ namespace ws
 				close(fd);
 			}
 			i += send(this->socket, buffer, sizeof(buffer), 0);
-			std::cout << i << std::endl;
 		}
 	};
 }

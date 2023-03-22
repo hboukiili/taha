@@ -7,10 +7,13 @@ namespace ws
 {
     void change_socket(std::map<int, server> &fds_server, int fileD, int newSocket)
     {
+        std::cout << "befor = " << fileD << "  "
+                  << "after = " << newSocket << std::endl;
         server tmp = fds_server[fileD];
-        fds_server.erase(fileD);
+        std::cout << "port inside the change = " << fds_server[fileD].get_port() << std::endl;
         fds_server.insert(std::make_pair(newSocket, tmp));
-		fds_server[newSocket].setSocket(newSocket);
+        fds_server[newSocket].setSocket(newSocket);
+        std::cout << "port inside the change = " << fds_server[newSocket].get_port() << std::endl;
     }
 
     std::map<int, server> ft_fds(std::vector<server> &servers)
@@ -19,6 +22,15 @@ namespace ws
         for (size_t i = 0; i < servers.size(); i++)
             fds.insert(std::make_pair(servers[i].getSocket(), servers[i]));
         return fds;
+    }
+    void print_e(std::map<int, server> i)
+    {
+        std::map<int, server>::iterator it = i.begin();
+        while (it != i.end())
+        {
+            std::cout << it->first << std::endl;
+            it++;
+        }
     }
     void connection_loop(std::vector<server> &servers)
     {
@@ -42,6 +54,7 @@ namespace ws
             if (it->first > max)
                 max = it->first;
         }
+        print_e(fds_servers);
         while (1)
         {
             fd_set tmp_readfds = readfds;
@@ -54,7 +67,7 @@ namespace ws
                 {
                     if (std::count(fds.begin(), fds.end(), fileD))
                     {
-                        std::cerr << "lala\n";
+                        std::cout << "lala\n";
                         new_socket = accept(fileD, NULL, NULL);
                         fcntl(new_socket, F_SETFL, O_NONBLOCK);
                         FD_SET(new_socket, &readfds);
@@ -82,7 +95,7 @@ namespace ws
                             else if (valread > 0)
                             {
                                 std::string request_str = std::string(buffer, valread);
-                                std::cerr << request_str;
+                                std::cout << request_str;
                                 std::cout << fileD << std::endl;
                                 if (!req.deja)
                                 {
@@ -159,27 +172,31 @@ namespace ws
                         }
                         else if (FD_ISSET(fileD, &tmp_writefds))
                         {
-                            std::cerr << "port = " << fds_servers[fileD].get_port() << std::endl;
-                            std::cout << "heeeereee \n";
-                            std::cout << fileD << std::endl;
-							fds_servers[fileD].set_req(req);
-                            if (!fds_servers[fileD].get_status())
+                            // std::cout << "port = " << fds_servers[fileD].get_port() << std::endl;
+                            // std::cout << "heeeereee \n";
+                            if (!fds_servers[fileD].req.ENTER)
                             {
-                                fds_servers[fileD].is_req_well_formed();
-                                fds_servers[fileD].checker();
+                                if (!fds_servers[fileD].get_status())
+                                {
+                                    fds_servers[fileD].set_req(req);
+                                    httpRequestInit(req, 1);
+                                    fds_servers[fileD].is_req_well_formed();
+                                    fds_servers[fileD].checker();
+                                }
+                                std::cout << "begin \n";
+                                fds_servers[fileD].response();
+                                if (fds_servers[fileD].getDone())
+                                {
+                                    fds_servers[fileD].req.ENTER = true;
+                                    std::cout << "ho\n";
+                                    FD_CLR(fileD, &writefds);
+                                    FD_CLR(fileD, &readfds);
+                                    FD_CLR(fileD, &tmp_writefds);
+                                    FD_CLR(fileD, &tmp_readfds);
+                                    fds_servers.erase(fileD);
+                                    close(fileD);
+                                }
                             }
-							std::cout << "begin \n";
-							fds_servers[fileD].response();
-							if (fds_servers[fileD].getDone())
-                            {
-                                std::cout << "ho\n";
-                                FD_CLR(fileD, &writefds);
-                                FD_CLR(fileD, &readfds);
-                                FD_CLR(fileD, &tmp_writefds);
-                                FD_CLR(fileD, &tmp_readfds); 
-                                close(fileD);
-                            }
-                            httpRequestInit(req, 1);
                         }
                     }
                 }
