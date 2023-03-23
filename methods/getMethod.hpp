@@ -14,10 +14,10 @@ namespace ws
     //     std::string mime;
     // };
 
-    std::string pathjoin(std::string root, std::string &path, std::string &Location)
+    std::string pathjoin(std::string root, std::string &path)
     {
-        (void) Location;
-        std::string r = root + path.substr(1);
+        std::string r;
+        r = root + path.substr(1);
         return r;
     }
     

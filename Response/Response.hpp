@@ -13,18 +13,32 @@ class response
 
 			this->first_time = true;
 			this->file_path = file;
-			if (dir)
+			if (dir && status != 301)
 				setDirheader();
-			if (status != 200)
+			if (status != 200 && status != 301)
 				get_path(status);
+			// if (check_cgi())
+			// {
+
+			// }
+			// std::cout << file_path << std::endl;
 			std::ostringstream oss;
+			std::cout << status << std::endl;
 			oss << req.version + response_message(status);
 			oss << "Date: " << getCurrentDate() << "\r\n";
-			oss << "Content-Type: " <<  check_MIME(file_path, dir) << "\r\n";
-			if (!dir)
-				oss << "Content-Length: " << get_size(file_path) << "\r\n";
+			if (status == 301)
+			{
+				oss << "Location: " << file << "\r\n";
+				oss << "Content-Length: " << '0' << "\r\n";
+			}
 			else
-				oss << "Content-Length: " << dir_body.length() << "\r\n";
+			{
+				oss << "Content-Type: " <<  check_MIME(file_path, dir) << "\r\n";
+				if (!dir)
+					oss << "Content-Length: " << get_size(file_path) << "\r\n";
+				else
+					oss << "Content-Length: " << dir_body.length() << "\r\n";
+			}
 			oss << "\r\n";
 			this->response_header = oss.str();
 			std::cout << response_header;
@@ -47,8 +61,6 @@ class response
 
 		void	get_path(int status)
 		{
-			if (status == 301)
-				this->file_path = "./Assets/Errors/301.html";
 			if (status == 400)
 				this->file_path = "./Assets/Errors/400.html";
 			if (status == 403)
@@ -88,8 +100,8 @@ class response
 				if (tmp == ".png")
 					return "image/png";
 				if (tmp == ".jpg")
-					return "image/jpeg";
-				if (tmp == "jpeg")
+					return "image/jpg";
+				if (tmp == ".jpeg")
 					return "image/jpeg";
 				if (tmp == ".gif")
 					return "image/gif";
@@ -99,6 +111,10 @@ class response
 					return "video/mp4";
 				if (tmp == ".ico")
 					return "image/x-icon";
+				if (tmp == ".webp")
+					return "image/webp";
+				if (tmp == ".mp3")
+					return "audio/mpeg";
 			}
 			return "text/plain";
 		}

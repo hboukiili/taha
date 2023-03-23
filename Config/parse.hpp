@@ -94,7 +94,7 @@ namespace ws
 		{
 			std::string file = this->get_location()[Location].get_root() + this->get_location()[Location].get_default();
 			if (Location != req.path)
-				file = pathjoin(this->get_location()[Location].get_root(), req.path, Location);
+				file = pathjoin(this->get_location()[Location].get_root(), req.path);
 			this->path = file;
 			if (fileExists(file))
 			{
@@ -104,9 +104,12 @@ namespace ws
 					std::cout << "directory \n";
 					if (req.path.back() != '/')
 						status = 301;
-					if (access(file.c_str(), R_OK))
+					else if (access(file.c_str(), R_OK) || this->_location[req.path].get_autoindex() == "off")
 						status = 402;
+					else
+						status = 200;
 					dir = true;
+					return ;
 				}
 				status = 200;
 				return;
@@ -119,6 +122,7 @@ namespace ws
 			status = 0;
 			i = 0;
 		}
+	
 		ws::HttpRequest req;
 		int flg;
 		std::string const &get_port() const { return this->port; }
@@ -151,22 +155,29 @@ namespace ws
 			std::map<std::string, std::string> hed(req.headers.begin(), req.headers.end());
 			std::string a = hed["Transfer-Encoding"];
 			std::string C = hed["Content-Length"];
+			// std::string R = _location[req.path].get_redirect().find("301")->second;
+			// if (!R.empty())
+			// 	status = 301;
+			// std::cout << _location[req.path].get_redirect().find("301")->second << std::endl;
 			if (!a.empty() && a != "chunked\r")
 				status = 501;
-			if (a.empty() && C.empty() && req.method == "POST")
+			else if (a.empty() && C.empty() && req.method == "POST")
 				status = 400;
-			if (req.path.length() > 2048)
+			else if (req.path.length() > 2048)
 				status = 414;
-			if (a.empty() && C.empty() && req.method == "POST")
+			else if (a.empty() && C.empty() && req.method == "POST")
 				status = 400;
-			if (!C.empty() && atoi(C.c_str()) > atoi(this->body_size.c_str()))
+			else if (!C.empty() && atoi(C.c_str()) > atoi(this->body_size.c_str()))
 				status = 413;
-			for (int i = 0; req.path[i]; i++)
+			else
 			{
-				if ((isalnum(req.path[i])) || (req.path[i] == 33) || (req.path[i] >= 35 && req.path[i] <= 47) || (req.path[i] <= 60 && req.path[i] >= 57) || (req.path[i] == 61) || (req.path[i] >= 63 && req.path[i] <= 64) || (req.path[i] == 95) || (req.path[i] == 126))
-					i++;
-				else
-					status = 400;
+				for (int i = 0; req.path[i]; i++)
+				{
+					if ((isalnum(req.path[i])) || (req.path[i] == 33) || (req.path[i] >= 35 && req.path[i] <= 47) || (req.path[i] <= 60 && req.path[i] >= 57) || (req.path[i] == 61) || (req.path[i] >= 63 && req.path[i] <= 64) || (req.path[i] == 95) || (req.path[i] == 126))
+						i++;
+					else
+						status = 400;
+				}
 			}
 		}
 
@@ -175,13 +186,16 @@ namespace ws
 			std::map<std::string, location> l = this->get_location();
 			std::map<std::string, location>::iterator it = locationChecker(req.path, l);
 			std::cout << "location = " << it->first << std::endl;
-			if (!methodChecker(req.method, l[it->first].get_method()))
-				status = 405;
+			// if (!methodChecker(req.method, l[it->first].get_method()))
+			// 	status = 405;
 			// if (status == 405)
 			// 	exit(1);
 			std::cout << "_checker was good\n";
 			if (req.method == "GET" && !status)
+			{
+				std::cout << "inside get \n";
 				getMethod(it->first);
+			}
 			// else if (req.method == "POST" && !status)
 			//     status =  PostMethod();
 			// else if (req.method == "DELETE" && !status)
@@ -196,16 +210,22 @@ namespace ws
 		{
 			if (!_response.first_time)
 			{
-				this->_response.set_header(this->path, status, req, dir);
+				if (status == 301 && !dir)
+					this->_response.set_header(_location[req.path].get_redirect().find("301")->second, status, req, dir);
+				else if (status == 301 && dir)
+					this->_response.set_header(req.path + '/', status, req, dir);
+				else
+					this->_response.set_header(this->path, status, req, dir);
 				send(this->socket, _response.response_header.c_str(), _response.response_header.length(), 0);
-				if (!dir)
+				if (!dir && status != 301)
 					fd = open(_response.file_path.c_str(), O_RDONLY);
-				std::cout << "=-=-=file = " << _response.file_path << "   " << this->socket << std::endl;
+				std::cout << "=-=-=file = " << _response.file_path << "   " << this->socket << " fd  = " << fd << std::endl;
 				this->_response.done = false;
 			}
-			if (dir)
+			if (dir || status == 301)
 			{
-				send(this->socket, _response.dir_body.c_str(), _response.dir_body.length(), 0);
+				if (status != 301)
+					send(this->socket, _response.dir_body.c_str(), _response.dir_body.length(), 0);
 				this->_response.done = true;
 				this->_response.first_time = false;
 				status = 0;
@@ -215,14 +235,22 @@ namespace ws
 			lseek(fd, i, SEEK_SET);
 			if (read(fd, buffer, sizeof(buffer)) <= 0)
 			{
-				std::cout << "here \n";
 				this->_response.done = true;
 				this->_response.first_time = false;
 				i = 0;
 				status = 0;
 				close(fd);
 			}
-			i += send(this->socket, buffer, sizeof(buffer), 0);
+			try 
+			{
+				// std::cout << buffer << std::endl;
+				i += send(this->socket, buffer, sizeof(buffer), 0);
+				std::cout << "=-=--=-=- " << i << std::endl;
+			}
+			catch (...)
+			{
+				std::cout << "a\n";
+			}
 		}
 	};
 }

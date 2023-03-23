@@ -7,13 +7,9 @@ namespace ws
 {
     void change_socket(std::map<int, server> &fds_server, int fileD, int newSocket)
     {
-        std::cout << "befor = " << fileD << "  "
-                  << "after = " << newSocket << std::endl;
         server tmp = fds_server[fileD];
-        std::cout << "port inside the change = " << fds_server[fileD].get_port() << std::endl;
         fds_server.insert(std::make_pair(newSocket, tmp));
         fds_server[newSocket].setSocket(newSocket);
-        std::cout << "port inside the change = " << fds_server[newSocket].get_port() << std::endl;
     }
 
     std::map<int, server> ft_fds(std::vector<server> &servers)
@@ -23,15 +19,7 @@ namespace ws
             fds.insert(std::make_pair(servers[i].getSocket(), servers[i]));
         return fds;
     }
-    void print_e(std::map<int, server> i)
-    {
-        std::map<int, server>::iterator it = i.begin();
-        while (it != i.end())
-        {
-            std::cout << it->first << std::endl;
-            it++;
-        }
-    }
+
     void connection_loop(std::vector<server> &servers)
     {
         std::map<int, server> fds_servers = ft_fds(servers);
@@ -54,7 +42,6 @@ namespace ws
             if (it->first > max)
                 max = it->first;
         }
-        print_e(fds_servers);
         while (1)
         {
             fd_set tmp_readfds = readfds;
@@ -67,7 +54,6 @@ namespace ws
                 {
                     if (std::count(fds.begin(), fds.end(), fileD))
                     {
-                        std::cout << "lala\n";
                         new_socket = accept(fileD, NULL, NULL);
                         fcntl(new_socket, F_SETFL, O_NONBLOCK);
                         FD_SET(new_socket, &readfds);
@@ -96,10 +82,10 @@ namespace ws
                             {
                                 std::string request_str = std::string(buffer, valread);
                                 std::cout << request_str;
-                                std::cout << fileD << std::endl;
                                 if (!req.deja)
                                 {
                                     req = parse_http_request(request_str, req, request_im);
+                                    fds_servers[fileD].set_req(req);
                                     if (!req.headers_complet)
                                         continue;
                                     request_im.clear();
@@ -174,11 +160,12 @@ namespace ws
                         {
                             // std::cout << "port = " << fds_servers[fileD].get_port() << std::endl;
                             // std::cout << "heeeereee \n";
-                            if (!fds_servers[fileD].req.ENTER)
-                            {
+                            // if (!fds_servers[fileD].req.ENTER)
+                            // {
+                                std::cout << "req path = " << req.path << "  " << fileD << std::endl;
                                 if (!fds_servers[fileD].get_status())
                                 {
-                                    fds_servers[fileD].set_req(req);
+                                    std::cout << "first time\n";
                                     httpRequestInit(req, 1);
                                     fds_servers[fileD].is_req_well_formed();
                                     fds_servers[fileD].checker();
@@ -196,7 +183,7 @@ namespace ws
                                     fds_servers.erase(fileD);
                                     close(fileD);
                                 }
-                            }
+                            // }
                         }
                     }
                 }
