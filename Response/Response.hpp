@@ -13,35 +13,36 @@ class response
 
 			this->first_time = true;
 			this->file_path = file;
-			if (dir && status != 301)
+			if (dir && status != 301 && status != 403)
 				setDirheader();
-			if (status != 200 && status != 301)
+			if (status != 200 && status != 301 && status != 204)
 				get_path(status);
-			// if (check_cgi())
-			// {
-
-			// }
-			// std::cout << file_path << std::endl;
+			std::cout << file_path << std::endl;
 			std::ostringstream oss;
-			std::cout << status << std::endl;
 			oss << req.version + response_message(status);
 			oss << "Date: " << getCurrentDate() << "\r\n";
-			if (status == 301)
+			if (status != 204)
 			{
-				oss << "Location: " << file << "\r\n";
-				oss << "Content-Length: " << '0' << "\r\n";
-			}
-			else
-			{
-				oss << "Content-Type: " <<  check_MIME(file_path, dir) << "\r\n";
-				if (!dir)
-					oss << "Content-Length: " << get_size(file_path) << "\r\n";
+				if (status == 301)
+				{
+					oss << "Location: " << file << "\r\n";
+					oss << "Content-Length: " << '0' << "\r\n";
+				}
 				else
-					oss << "Content-Length: " << dir_body.length() << "\r\n";
+				{
+					oss << "Content-Type: " <<  check_MIME(file_path, dir) << "\r\n";
+					if (status != 209)
+					{
+						if (!dir || (dir && status == 403))
+							oss << "Content-Length: " << get_size(file_path) << "\r\n";
+						else
+							oss << "Content-Length: " << dir_body.length() << "\r\n";
+					}
+				}
 			}
 			oss << "\r\n";
 			this->response_header = oss.str();
-			std::cout << response_header;
+			std::cout << response_header << std::endl;
         }
     private :
 		void	setDirheader()
@@ -90,7 +91,6 @@ class response
 			if (file.find_last_of('.') != std::string::npos)
 			{
 				std::string tmp = file.substr(file.find_last_of('.'), file.length());
-				std::cout << tmp << std::endl;
 				if (tmp == ".html")
 					return "text/html";
 				if (tmp == ".css")

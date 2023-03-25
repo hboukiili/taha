@@ -81,13 +81,12 @@ namespace ws
                             else if (valread > 0)
                             {
                                 std::string request_str = std::string(buffer, valread);
-                                std::cout << request_str;
                                 if (!req.deja)
                                 {
                                     req = parse_http_request(request_str, req, request_im);
-                                    fds_servers[fileD].set_req(req);
                                     if (!req.headers_complet)
                                         continue;
+                                    fds_servers[fileD].set_req(req);
                                     request_im.clear();
                                     tmp_body = req.body;
                                     req.deja = true;
@@ -127,17 +126,6 @@ namespace ws
                                         }
                                     }
                                 }
-                                // if the body is so small
-                                // if ((req.method == "POST" && !req.headers["Content-Length"].empty() && (size_t)atoi(req.headers["Content-Length"].c_str()) == tmp_body.length()))
-                                // {
-                                //     req.con = bodyParsing(req, tmp_body, 1);
-                                //     FD_SET(fileD, &writefds);
-                                //     FD_CLR(fileD, &readfds);
-                                //     httpRequestInit(req, 0);
-                                //     request_im.clear();
-                                //     tmp_body.clear();
-                                //     continue;
-                                // }
                             }
                             else if (valread == 0)
                             {
@@ -158,24 +146,15 @@ namespace ws
                         }
                         else if (FD_ISSET(fileD, &tmp_writefds))
                         {
-                            // std::cout << "port = " << fds_servers[fileD].get_port() << std::endl;
-                            // std::cout << "heeeereee \n";
-                            // if (!fds_servers[fileD].req.ENTER)
-                            // {
-                                std::cout << "req path = " << req.path << "  " << fileD << std::endl;
                                 if (!fds_servers[fileD].get_status())
                                 {
-                                    std::cout << "first time\n";
                                     httpRequestInit(req, 1);
                                     fds_servers[fileD].is_req_well_formed();
                                     fds_servers[fileD].checker();
                                 }
-                                std::cout << "begin \n";
                                 fds_servers[fileD].response();
                                 if (fds_servers[fileD].getDone())
                                 {
-                                    fds_servers[fileD].req.ENTER = true;
-                                    std::cout << "ho\n";
                                     FD_CLR(fileD, &writefds);
                                     FD_CLR(fileD, &readfds);
                                     FD_CLR(fileD, &tmp_writefds);
@@ -183,7 +162,6 @@ namespace ws
                                     fds_servers.erase(fileD);
                                     close(fileD);
                                 }
-                            // }
                         }
                     }
                 }
