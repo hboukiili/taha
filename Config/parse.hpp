@@ -58,32 +58,6 @@ namespace ws
 		bool dir;
 		std::string Location;
 
-		std::map<std::string, location>::iterator locationChecker(std::string path, std::map<std::string, location> &Location)
-		{
-			std::vector<std::string> pathComponents; // vector of paths
-			std::stringstream ss(path);
-			std::string component;			  // tmp of one path
-			std::getline(ss, component, '/'); // getting the first path '/'
-			std::string tmp = "\0";
-			pathComponents.push_back("/" + component);
-			while (std::getline(ss, component, '/')) // loop for getting paths and stock it on the vector(pathComponents)
-			{
-				pathComponents.push_back(tmp + "/" + component);
-				tmp += "/" + component;
-			}
-			if (pathComponents.size() == 1)
-				return Location.find("/");
-			std::map<std::string, location>::iterator it;
-			size_t n = pathComponents.size() - 1;
-			for (; n > 0; n--) // check if one of the pathComponents is exiting on the server(location)
-			{
-				it = Location.find(pathComponents[n]);
-				if (it != Location.end())
-					return it;
-			}
-			return Location.find("/"); // if isn't exist we return end of map
-		}
-
 		bool methodChecker(std::string method, std::vector<std::string> Location)
 		{
 			for (size_t n = 0; n < Location.size(); n++)
@@ -149,6 +123,32 @@ namespace ws
 			i = 0;
 		}
 
+		std::map<std::string, location>::iterator locationChecker(std::string path, std::map<std::string, location> &Location)
+		{
+			std::vector<std::string> pathComponents; // vector of paths
+			std::stringstream ss(path);
+			std::string component;			  // tmp of one path
+			std::getline(ss, component, '/'); // getting the first path '/'
+			std::string tmp = "\0";
+			pathComponents.push_back("/" + component);
+			while (std::getline(ss, component, '/')) // loop for getting paths and stock it on the vector(pathComponents)
+			{
+				pathComponents.push_back(tmp + "/" + component);
+				tmp += "/" + component;
+			}
+			if (pathComponents.size() == 1)
+				return Location.find("/");
+			std::map<std::string, location>::iterator it;
+			size_t n = pathComponents.size() - 1;
+			for (; n > 0; n--) // check if one of the pathComponents is exiting on the server(location)
+			{
+				it = Location.find(pathComponents[n]);
+				if (it != Location.end())
+					return it;
+			}
+			return Location.find("/"); // if isn't exist we return end of map
+		}
+
 		ws::HttpRequest req;
 		int flg;
 		std::string const &get_port() const { return this->port; }
@@ -186,7 +186,6 @@ namespace ws
 			std::map<std::string, std::string> hed(req.headers.begin(), req.headers.end());
 			std::string a = hed["Transfer-Encoding"];
 			std::string C = hed["Content-Length"];
-			std::cout << this->Location << std::endl;
 			std::string R;
 			if (_location[this->Location].get_redirect().find("301") != _location[this->Location].get_redirect().end())
 				R = _location[this->Location].get_redirect().find("301")->first;
@@ -221,13 +220,10 @@ namespace ws
 				status = 405;
 			if (req.method == "GET" && !status)
 				getMethod(Location);
-			// else if (req.method == "POST" && !status)
-			//     status =  PostMethod();
 			else if (req.method == "DELETE" && !status)
 				DeleteMethod(Location);
-			// _response = _response();
-			// std::cout << req.path << std::endl;
-			// return responseFunction(req.path, req, status);
+			// else if (req.method == "POST" && !status)
+			//     status =  PostMethod();
 		}
 
 		void response()
@@ -240,15 +236,16 @@ namespace ws
 					this->_response.set_header(req.path + '/', status, req, dir);
 				else
 					this->_response.set_header(this->path, status, req, dir);
-				send(this->socket, _response.response_header.c_str(), _response.response_header.length(), 0);
 				if ((!dir && status != 301) || (dir && status == 403))
 					fd = open(_response.file_path.c_str(), O_RDONLY);
+				_response._send(_response.response_header.c_str(), this->socket, _response.response_header.length());
 				this->_response.done = false;
+				return ;
 			}
 			if ((dir && status != 403) || status == 301)
 			{
 				if (status != 301)
-					send(this->socket, _response.dir_body.c_str(), _response.dir_body.length(), 0);
+					_response._send(_response.dir_body.c_str(), this->socket, _response.dir_body.length());
 				this->_response.done = true;
 				this->_response.first_time = false;
 				status = 0;
@@ -263,22 +260,11 @@ namespace ws
 				i = 0;
 				status = 0;
 				close(fd);
+				return ;
 			}
-			try
-			{
-
-				if (is_connected(this->socket))
-					i += send(this->socket, buffer, sizeof(buffer), 0);
-				else
-				{
-					this->_response.done = true;
-					this->_response.first_time = false;
-					i = 0;
-					status = 0;
-					close(fd);
-				}
-			}
-			catch (...)
+			if (is_connected(this->socket))
+				i += _response._send(buffer, this->socket, sizeof(buffer));
+			else
 			{
 				this->_response.done = true;
 				this->_response.first_time = false;

@@ -1,4 +1,7 @@
+#pragma once
 #include <dirent.h>
+#include "../Request/tools.hpp"
+#include "../cgi/cgi.hpp"
 
 class response 
 {
@@ -8,6 +11,10 @@ class response
 		std::string response_header;
 		std::string file_path;
 		std::string dir_body;
+		std::string cgi_file_path;
+		int			i;
+		int			fd;
+	
         void    set_header(std::string file, int status, ws::HttpRequest req, bool dir)
         {
 
@@ -17,7 +24,12 @@ class response
 				setDirheader();
 			if (status != 200 && status != 301 && status != 204)
 				get_path(status);
-			std::cout << file_path << std::endl;
+			if (check_extension2(file_path))
+			{
+				cgi c(file_path);
+				c.exec();
+				file_path = c.get_outfile_path();
+			}
 			std::ostringstream oss;
 			oss << req.version + response_message(status);
 			oss << "Date: " << getCurrentDate() << "\r\n";
@@ -44,6 +56,13 @@ class response
 			this->response_header = oss.str();
 			std::cout << response_header << std::endl;
         }
+
+		int	_send(const char *a, int socket, size_t length)
+		{
+			i = 0;
+			i = send(socket, a, length, 0);
+			return i;
+		}
     private :
 		void	setDirheader()
 		{
