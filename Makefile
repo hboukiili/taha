@@ -1,5 +1,5 @@
-FLAGS = -Wall -Wextra -Werror -std=c++98
-SRC = main.cpp
+FLAGS = -Wall -Wextra -Werror
+SRC = main.cpp 
 CC = c++
 
 all : server 
@@ -10,12 +10,12 @@ server : $(SRC_CLIENT)
 
 
 clean :
-	@rm -f client webserv
+	@rm -f webserv ./Session_management/sessionIds ./Assets/uploads/*
 	@tput setaf 1; echo "CLEAN COMPLET"
 
 fclean : clean
 
 push : 
-	git add . && git commit -m "merge complet" && git push origin webserv 
+	git add . && git commit -m "fix some tkhrbi9" && git push origin webserv 
 
 re: fclean all
