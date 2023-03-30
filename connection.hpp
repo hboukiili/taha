@@ -30,10 +30,9 @@ namespace ws
         HttpRequest req;
         fd_set readfds;
         fd_set writefds;
-        int status_code = 0;
+        int tmp = 1;
         int max = 0;
         int new_socket;
-        int tmp = 1;
         FD_ZERO(&readfds);
         FD_ZERO(&writefds);
         for (std::map<int, server>::iterator it = fds_servers.begin(); it != fds_servers.end(); it++)
@@ -84,7 +83,7 @@ namespace ws
                             else if (valread > 0)
                             {
                                 std::string request_str = std::string(buffer, valread);
-                                std::cout << request_str;
+                                // std::cout << request_str;
                                 if (!req.deja)
                                 {
                                     req = parse_http_request(request_str, req, request_im, fds_servers[fileD]);
@@ -97,9 +96,18 @@ namespace ws
                                     req.deja = true;
                                     if (req.method != "POST")
                                     {
+                                        httpRequestInit(req, 0);
                                         FD_SET(fileD, &writefds);
                                         FD_CLR(fileD, &readfds);
+                                        continue;
+                                    }
+                                    if (req.method == "POST" && atoi(req.headers["Content-Length"].c_str()) + 2 == (int)req.body.length())
+                                    {
+                                        req.con = bodyParsing(req, tmp_body, req.end_, fds_servers[fileD]);
+                                        fds_servers[fileD].set_req(req);
                                         httpRequestInit(req, 0);
+                                        FD_SET(fileD, &writefds);
+                                        FD_CLR(fileD, &readfds);
                                         continue;
                                     }
                                 }
@@ -113,6 +121,7 @@ namespace ws
                                             chunked_uncoding(request_str, req);
                                             request_str.clear();
                                             req.con = bodyParsing(req, tmp_body, req.end_, fds_servers[fileD]);
+                                            fds_servers[fileD].set_req(req);
                                         }
                                         else
                                         {
@@ -122,20 +131,19 @@ namespace ws
                                             if (req.chunked_c == -1)
                                             {
                                                 httpRequestInit(req, 0);
-                                                fds_servers[fileD].set_req(req);
                                                 FD_SET(fileD, &writefds);
                                                 FD_SET(fileD, &tmp_writefds);
                                                 FD_CLR(fileD, &readfds);
                                                 FD_CLR(fileD, &tmp_readfds);
                                                 req.con = 0;
-                                                status_code = 404;
+                                                fds_servers[fileD].setStatus(404);
                                                 continue;
                                             }
                                         }
                                         if (req.con)
                                         {
-                                            httpRequestInit(req, 0);
                                             fds_servers[fileD].set_req(req);
+                                            httpRequestInit(req, 0);
                                             FD_SET(fileD, &writefds);
                                             FD_SET(fileD, &tmp_writefds);
                                             FD_CLR(fileD, &readfds);
@@ -165,7 +173,7 @@ namespace ws
                         }
                         else if (FD_ISSET(fileD, &tmp_writefds))
                         {
-                            std::cout << "B\n";
+                            std::cout << "READY\n";
                             if (!fds_servers[fileD].get_status())
                             {
                                 httpRequestInit(req, 1);

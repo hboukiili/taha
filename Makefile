@@ -7,6 +7,7 @@ all : server
 server : $(SRC_CLIENT)
 	@$(CC) $(FLAGS) $(SRC) -o webserv
 	@./webserv conf.conf
+	@touch Session_management/sessionIds
 
 
 clean :
@@ -16,6 +17,6 @@ clean :
 fclean : clean
 
 push : 
-	git add . && git commit -m "fix some tkhrbi9" && git push origin webserv 
+	git add . && git commit -m "boundary fix" && git push origin webserv 
 
 re: fclean all
