@@ -9,6 +9,7 @@ namespace ws
         std::string version;
         std::map<std::string, std::string> headers;
         std::string body;
+        std::string query;
         bool chunked;
         bool deja;
         bool con;
@@ -70,7 +71,7 @@ namespace ws
                     if (req.Boundary && p != std::string::npos)
                     {
                         std::map<std::string, std::string> boundary_files = boundaryParsing(body, req);
-                        // if (!req.NoUpload)
+                        if (!req.NoUpload)
                         {
                             for (std::map<std::string, std::string>::iterator it = boundary_files.begin(); it != boundary_files.end(); it++)
                             {
@@ -88,7 +89,8 @@ namespace ws
                                 }
                             }
                         }
-                        // else req.body = boundary_files.begin()->second;
+                        else
+                            req.body = body;
                         return true;
                     }
                     else
@@ -161,6 +163,10 @@ namespace ws
             getline(ss, line); // First line is the request line
             std::stringstream req_line_ss(line);
             req_line_ss >> req.method >> req.path >> req.version;
+            size_t n;
+            if ( (n = req.path.find('?')) != std::string::npos)
+                req.query = req.path.substr(n + 1);
+            std::cout << req.query << std::endl;
             // Parse headers
             while (getline(ss, line))
             {
