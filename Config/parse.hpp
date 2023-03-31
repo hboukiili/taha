@@ -294,11 +294,12 @@ namespace ws
 			std::cout << "lol\n";
 			if (!_response.first_time)
 			{
+				req.port = this->port;
 				std::cout << "here " << status << std::endl;
 				if (status == 301 && dir)
-					this->_response.set_header(req.path + '/', status, req, dir, this->error_page, this->_location[Location].cgi, port);
+					this->_response.set_header(req.path + '/', status, req, dir, this->error_page, this->_location[Location].cgi);
 				else
-					this->_response.set_header(this->path, status, req, dir, this->error_page, this->_location[Location].cgi, port);
+					this->_response.set_header(this->path, status, req, dir, this->error_page, this->_location[Location].cgi);
 				if ((!dir && status != 301) || (dir && status == 403))
 					fd = open(_response.file_path.c_str(), O_RDONLY);
 				_response._send(_response.response_header.c_str(), this->socket, _response.response_header.length());

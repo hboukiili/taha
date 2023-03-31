@@ -22,6 +22,7 @@ namespace ws
         std::map<std::string, std::string> cookies;
         std::string session;
         bool NoUpload;
+        std::string port;
         HttpRequest() : chunked(false), deja(false), con(false), end_(false), Boundary(false), headers_complet(false), chunked_c(0), NoUpload(0) {}
     };
 }

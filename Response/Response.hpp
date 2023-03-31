@@ -20,7 +20,7 @@ class response
 		bool		_cgi;
 		std::string content_type;
 
-        void    set_header(std::string file, int status, ws::HttpRequest req, bool dir, std::string &error_page, bool cgi_true, std::string port)
+        void    set_header(std::string file, int status, ws::HttpRequest req, bool dir, std::string &error_page, bool cgi_true)
         {
 
 			this->first_time = true;
@@ -40,7 +40,7 @@ class response
 
 			if (cgi_true && !errors && check_extension2(file_path) && req.method != "DELETE")
 			{
-				cgi c(file_path, req, port);
+				cgi c(file_path, req);
 				std::cout << "++++++++++++++++cgi++++++++++++++++\n";
 				c.exec();
 				_cgi = true;

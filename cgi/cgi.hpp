@@ -40,7 +40,7 @@ private:
     std::string port;
 
 public:
-    cgi(std::string p, ws::HttpRequest request, std::string po);
+    cgi(std::string p, ws::HttpRequest request);
     ~cgi();
     int get_cgi_pid();
     void fill_env();
@@ -87,9 +87,9 @@ int check_extension2(std::string name)
         return (0);
 }
 
-cgi::cgi(std::string p, ws::HttpRequest request, std::string po)
+cgi::cgi(std::string p, ws::HttpRequest request)
 {
-    port = po;
+    port = request.port;
     req = request;
     path = p;
     cgi_pid = -1;
