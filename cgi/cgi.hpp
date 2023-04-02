@@ -93,7 +93,7 @@ int check_extension2(std::string name)
 
 cgi::cgi(std::string p, ws::HttpRequest request)
 {
-    query = req.query;
+    query = request.query;
     port = request.port;
     req = request;
     path = p;
@@ -136,75 +136,18 @@ std::string cgi::get_outfile_path()
 
 void cgi::fill_env()
 {
-    // std::string s = "SERVER_PROTOCOL=";
-
-    // s.append(req.version);
-    // env = new char *[11];
-    // env[0] = new char[s.size() + 1];
-    // strcpy(env[0], s.c_str());
-
-    // s.clear();
-    // s = "SERVER_PORT=";
-    // s.append(port);
-    // env[1] = new char[s.size() + 1];
-    // strcpy(env[1], s.c_str());
-
-    // s.clear();
-    // s = "REQUEST_METHOD=";
-    // s.append(req.method);
-    // env[2] = new char[s.size() + 1];
-    // strcpy(env[2], s.c_str());
-
-    // s.clear();
-    // s = "PATH_INFO=";
-    // s.append(path);
-    // env[3] = new char[s.size() + 1];
-    // strcpy(env[3], s.c_str());
-
-    // s.clear();
-    // s = "SCRIPT_NAME=";
-    // s.append(php);
-    // env[4] = new char[s.size() + 1];
-    // strcpy(env[4], s.c_str());
-
-    // s.clear();
-    // s = "QUERY_STRING=";
-    // s.append(query);
-    // env[5] = new char[s.size() + 1];
-    // strcpy(env[5], s.c_str());
-
-    // s.clear();
-    // s = "REMOTE_ADDR=";
-    // s.append("127.0.0.1");
-    // env[6] = new char[s.size() + 1];
-    // strcpy(env[6], s.c_str());
-
-    // s.clear();
-    // s = "REDIRECT_STATUS=";
-    // s.append("200");
-    // env[7] = new char[s.size() + 1];
-    // strcpy(env[7], s.c_str());
-    
-    // s.clear();
-    // s = "CONTENT_TYPE=";
-    // s.append(req.headers["Content-type"]));
-    // env[8] = new char[s.size() + 1];
-    // strcpy(env[8], s.c_str());
-
-    // s.clear();
-    // s = "CONTENT_LENGTH=";
-    // s.append(std::to_string("Content-length"));
-    // env[9] = new char[s.size() + 1];
-    // strcpy(env[9], s.c_str());
-
-    // env[10] = NULL;
-    
     if (req.method == "POST")
         env = new char *[11];
     else
         env = new char *[9];
     std::string s = "PATH_INFO=";
     s.append(path);
+    if (!query.empty())
+    {
+        query = query.substr(0, query.size() - 1);
+        s += '?';
+        s.append(query);
+    }
     env[0] = new char[s.size() + 1];
     strcpy(env[0], s.c_str());
 
@@ -268,6 +211,11 @@ void cgi::fill_env()
     }
     else
         env[8] = NULL;
+    std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=--\n";
+    int i = 0;
+    while(env[i])
+        std::cout << env[i++] << std::endl;
+    std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=--\n";
     // s.clear();
     // s = "SERVER_PROTOCOL=";
     // s.append(req.version);
@@ -279,6 +227,7 @@ void cgi::fill_env()
 
 void cgi::exec_cgi(char **args, char **env, int fd)
 {
+    lseek(tmp_fd, 0, SEEK_SET);
     cgi_pid = fork();
     if (cgi_pid == -1)
     {
@@ -286,7 +235,7 @@ void cgi::exec_cgi(char **args, char **env, int fd)
     }
     if (cgi_pid == 0)
     {
-        if (body_existense == 1)
+        if (req.method == "POST")
             dup2(fd, 0);
         dup2(tmp_fd, 1);
         if (execve(args[0], args, env) == -1)
@@ -456,10 +405,16 @@ void cgi::exec()
     outname = "cgi/" + random_name();
     if (!req.body.empty())
     {
+        req.body = req.body.substr(2);
+        // std::cout << "===============================\n";
+        // std::cout << req.body;
+        // std::cout << "===============================\n";
         body_existense = 1;
+        std::cout << "------body-----\n" << req.body << "\n------body-----" << std::endl;
         in_fd = open("cgi/tempbody", O_CREAT | O_RDWR | O_TRUNC, 0666);
         wait_for_body_file();
         write(in_fd, req.body.c_str(), req.body.size());
+        lseek(in_fd, 0, SEEK_SET);
         // std::ofstream outbody;
         // outbody.open("cgi/tempbody", std::ios::out);
         // outbody << req.body;
@@ -472,9 +427,9 @@ void cgi::exec()
     wait_cgi();
     //std::this_thread::sleep_for(std::chrono::milliseconds(100));
     remove_header();
-    remove("cgi/tempfile");
-    if (body_existense == 1)
-        remove("cgi/tempbody");
+    // remove("cgi/tempfile");
+    // if (body_existense == 1)
+    //     remove("cgi/tempbody");
 }
 
 #endif
