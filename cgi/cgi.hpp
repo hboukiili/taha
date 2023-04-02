@@ -1,3 +1,5 @@
+
+
 #ifndef CGI_HPP
 #define CGI_HPP
 
@@ -57,6 +59,7 @@ public:
     void parse_content_type(std::string str);
     std::string get_content_type();
     int get_extension();
+    void wait_for_body_file();
     class fork_error : public std::exception
     {
         const char *what() const throw()
@@ -251,13 +254,13 @@ void cgi::fill_env()
 
         s.clear();
         s = "CONTENT_TYPE=";
-        s.append(req.headers["Content-type"]);
+        s.append(req.headers["Content-Type"]);
         env[8] = new char[s.size() + 1];
         strcpy(env[8], s.c_str());
 
         s.clear();
         s = "CONTENT_LENGTH=";
-        s.append(req.headers["Content-length"]);
+        s.append(req.headers["Content-Length"]);
         env[9] = new char[s.size() + 1];
         strcpy(env[9], s.c_str());
 
@@ -364,6 +367,22 @@ void cgi::wait_for_tempfile_file()
     }
 }
 
+void cgi::wait_for_body_file()
+{
+    while (true)
+    {
+    
+        std::fstream tempfile;
+        tempfile.open("cgi/tempbody");
+        if(tempfile.good())
+        {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        tempfile.close();
+    }
+}
+
 void cgi::parse_content_type(std::string str)
 {
     int i;
@@ -439,15 +458,18 @@ void cgi::exec()
     {
         body_existense = 1;
         in_fd = open("cgi/tempbody", O_CREAT | O_RDWR | O_TRUNC, 0666);
-        std::ofstream outbody;
-        outbody.open("cgi/tempbody", std::ios::out);
-        outbody << req.body;
+        wait_for_body_file();
+        write(in_fd, req.body.c_str(), req.body.size());
+        // std::ofstream outbody;
+        // outbody.open("cgi/tempbody", std::ios::out);
+        // outbody << req.body;
     }
     else
         body_existense = 0;
     tmp_fd = open("cgi/tempfile", O_CREAT | O_WRONLY | O_TRUNC, 0666);
     fill_env();
     exec_cgi(args, env, in_fd);
+    wait_cgi();
     //std::this_thread::sleep_for(std::chrono::milliseconds(100));
     remove_header();
     remove("cgi/tempfile");

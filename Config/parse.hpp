@@ -337,8 +337,8 @@ namespace ws
 			}
 			else
 				i += x;
-			if (_response._cgi)
-				remove(_response.file_path.c_str());
+			// if (_response._cgi)
+			// 	remove(_response.file_path.c_str());
 		}
 	};
 }

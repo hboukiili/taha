@@ -45,6 +45,7 @@ class response
 				c.exec();
 				_cgi = true;
 				file_path = c.get_outfile_path();
+				std::cout << file_path << std::endl;
 				if (c.get_extension() == 1)
 					content_type = c.get_content_type();
 				std::cout << content_type << std::endl;
