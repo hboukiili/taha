@@ -30,7 +30,6 @@ private:
     char **env;
     char **args;
     int in_fd;
-    //int out_fd;
     int tmp_fd;
     std::string out_path;
     std::string php;
@@ -195,13 +194,11 @@ void cgi::fill_env()
 
     if (req.method == "POST")
     {
-
         s.clear();
         s = "CONTENT_TYPE=";
         s.append(req.headers["Content-Type"].substr(0, req.headers["Content-Type"].length() - 1));
         env[8] = new char[s.size() + 1];
         strcpy(env[8], s.c_str());
-
         s.clear();
         s = "CONTENT_LENGTH=";
         s.append(req.headers["Content-Length"]);
@@ -212,13 +209,6 @@ void cgi::fill_env()
     }
     else
         env[8] = NULL;
-    // s.clear();
-    // s = "SERVER_PROTOCOL=";
-    // s.append(req.version);
-    // env = new char *[11];
-    // env[10] = new char[s.size() + 1];
-    // strcpy(env[10], s.c_str());
-
 }
 
 void cgi::exec_cgi(char **args, char **env, int fd)
@@ -407,9 +397,6 @@ void cgi::exec()
         wait_for_body_file();
         write(in_fd, req.body.c_str(), req.body.size());
         lseek(in_fd, 0, SEEK_SET);
-        // std::ofstream outbody;
-        // outbody.open("cgi/tempbody", std::ios::out);
-        // outbody << req.body;
     }
     else
         body_existense = 0;
@@ -417,7 +404,6 @@ void cgi::exec()
     fill_env();
     exec_cgi(args, env, in_fd);
     wait_cgi();
-    //std::this_thread::sleep_for(std::chrono::milliseconds(100));
     remove_header();
     remove("cgi/tempfile");
     if (body_existense == 1)

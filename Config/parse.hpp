@@ -286,11 +286,9 @@ namespace ws
 
 		void response()
 		{
-			// std::cout << "lol\n";
 			if (!_response.first_time)
 			{
 				req.port = this->port;
-				// std::cout << "here " << status << std::endl;
 				if (status == 301 && dir)
 					this->_response.set_header(req.path + '/', status, req, dir, this->error_page, this->_location[Location].cgi);
 				else
@@ -303,7 +301,6 @@ namespace ws
 			}
 			if ((dir && status != 403) || status == 301 || _response.errors)
 			{
-				// std::cout << status << std::endl;
 				if (status != 301)
 					_response._send(_response.dir_body.c_str(), this->socket, _response.dir_body.length());
 				this->_response.done = true;
