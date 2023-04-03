@@ -1,5 +1,7 @@
 <html>
 <body>
-    hello <?php echo $_GET['name'] ?>
+    first name :  <?php echo $_GET['name']?>
+</br>
+    family name :  <?php echo $_GET['sname'] ?>
 </body>
 </html>

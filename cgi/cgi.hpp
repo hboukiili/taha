@@ -142,15 +142,16 @@ void cgi::fill_env()
         env = new char *[9];
     std::string s = "PATH_INFO=";
     s.append(path);
-    if (!query.empty())
+    if (!query.empty() && query.find('&') != std::string::npos && req.method == "POST")
     {
         query = query.substr(0, query.size() - 1);
         s += '?';
         s.append(query);
     }
+    if (query.empty() && req.method == "POST" && req.headers["Content-Type"] == "application/x-www-form-urlencoded\r")
+        query = req.body;
     env[0] = new char[s.size() + 1];
     strcpy(env[0], s.c_str());
-
     s.clear();
     s = "QUERY_STRING=";
     s.append(query);
@@ -197,7 +198,7 @@ void cgi::fill_env()
 
         s.clear();
         s = "CONTENT_TYPE=";
-        s.append(req.headers["Content-Type"]);
+        s.append(req.headers["Content-Type"].substr(0, req.headers["Content-Type"].length() - 1));
         env[8] = new char[s.size() + 1];
         strcpy(env[8], s.c_str());
 
@@ -211,11 +212,6 @@ void cgi::fill_env()
     }
     else
         env[8] = NULL;
-    std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=--\n";
-    int i = 0;
-    while(env[i])
-        std::cout << env[i++] << std::endl;
-    std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=--\n";
     // s.clear();
     // s = "SERVER_PROTOCOL=";
     // s.append(req.version);
@@ -406,11 +402,7 @@ void cgi::exec()
     if (!req.body.empty())
     {
         req.body = req.body.substr(2);
-        // std::cout << "===============================\n";
-        // std::cout << req.body;
-        // std::cout << "===============================\n";
         body_existense = 1;
-        std::cout << "------body-----\n" << req.body << "\n------body-----" << std::endl;
         in_fd = open("cgi/tempbody", O_CREAT | O_RDWR | O_TRUNC, 0666);
         wait_for_body_file();
         write(in_fd, req.body.c_str(), req.body.size());
@@ -427,9 +419,9 @@ void cgi::exec()
     wait_cgi();
     //std::this_thread::sleep_for(std::chrono::milliseconds(100));
     remove_header();
-    // remove("cgi/tempfile");
-    // if (body_existense == 1)
-    //     remove("cgi/tempbody");
+    remove("cgi/tempfile");
+    if (body_existense == 1)
+        remove("cgi/tempbody");
 }
 
 #endif

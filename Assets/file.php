@@ -1,6 +1,7 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // save $_FILES['avatar'] to a inside a folder
+    
     $avatar = $_FILES['avatar'];
     $avatar_name = $avatar['name'];
     $avatar_tmp_name = $avatar['tmp_name'];
@@ -51,10 +52,10 @@ hiiiii
     <?php if (isset($_COOKIE['name']) && isset($_COOKIE['email'])): ?>
         <p>
             <center><h1>Hello, <?= $_COOKIE['name'] ?>!</h1></center><hr>
-            <!-- <center><img src="<?= $_COOKIE['avatar'] ?>" alt="avatar" width="300" height="300" style="object-fit: cover;"></center><hr><br/>
+            <center><img src="<?= $_COOKIE['avatar'] ?>" alt="avatar" width="300" height="300" style="object-fit: cover;"></center><hr><br/>
             <center><?php echo $_COOKIE['name']; ?></center>
             <center><?php echo $_COOKIE['email']; ?></center><br/><br/>
-            <center><a href="?logout">Logout</a></center> -->
+            <center><a href="?logout">Logout</a></center>
         </p>
     <?php else: ?>
         <form method="post" enctype="multipart/form-data">

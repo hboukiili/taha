@@ -70,10 +70,8 @@ namespace ws
 			this->path = this->get_location()[Location].get_root() + this->get_location()[Location].get_default();
 			if (Location != req.path)
 				this->path = pathjoin(this->get_location()[Location].get_root(), req.path, this->Location);
-			// std::cout << path << std::endl;
 			if (fileExists(path))
 			{
-				// std::cout << "EXist\n";
 				if (is_directory(path))
 				{
 					if (req.path.back() != '/')
@@ -335,8 +333,8 @@ namespace ws
 			}
 			else
 				i += x;
-			// if (_response._cgi)
-			// 	remove(_response.file_path.c_str());
+			if (_response._cgi)
+				remove(_response.file_path.c_str());
 		}
 	};
 }

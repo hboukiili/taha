@@ -39,16 +39,14 @@ class response
 
 			if (cgi_true && !errors && check_extension2(file_path) && req.method != "DELETE")
 			{
-				std::cout << "befor = " << file_path << std::endl;
 				cgi c(file_path, req);
-				std::cout << "++++++++++++++++cgi++++++++++++++++\n";
 				c.exec();
 				_cgi = true;
 				file_path = c.get_outfile_path();
 				if (c.get_extension() == 1)
 					content_type = c.get_content_type();
-				std::cout << file_path << std::endl;
-				std::cout << "++++++++++++++++cgi++++++++++++++++\n";
+				// std::cout << file_path << std::endl;
+				// std::cout << "++++++++++++++++cgi++++++++++++++++\n";
 			}
 			std::ostringstream oss;
 			oss << req.version + response_message(status);
@@ -69,7 +67,7 @@ class response
 						oss << "Content-Type: " <<  content_type << "\r\n";
 					else
 						oss << "Content-Type: " <<  check_MIME(file_path, dir) << "\r\n";
-					// oss << "Set-Cookie: " + ws::CokiesResponse(req.session) << "\r\n";
+					// oss <÷< "Set-Cookie: " + ws::CokiesResponse(req.session) << "\r\n";
 					if (status != 209)
 					{
 						if ((!dir || (dir && status == 403)) && !errors)
@@ -81,7 +79,7 @@ class response
 			}
 			oss << "\r\n";
 			this->response_header = oss.str();
-			std::cout << response_header << std::endl;
+			// std::cout << response_header << std::endl;
         }
 
 		int	_send(const char *a, int socket, size_t length)
