@@ -232,11 +232,9 @@ namespace ws
         DIR *dir = opendir(path.c_str());
         if (!dir)
         {
-            // Directory does not exist or cannot be opened
             return false;
         }
 
-        // Loop over the contents of the directory
         struct dirent *entry;
         while ((entry = readdir(dir)))
         {
@@ -248,7 +246,8 @@ namespace ws
             if (is_directory(entry_path))
             {
                 entry_path = entry_path + "/";
-                if (!remove_directory(entry_path.c_str()))
+                if (!remove_directory(entry_path.c_str())
+                    || !access(entry_path.c_str(), W_OK))
                 {
                     closedir(dir);
                     return false;
@@ -256,8 +255,7 @@ namespace ws
             }
             else
             {
-                // Remove files
-                if (remove(entry_path.c_str()) != 0)
+                if (remove(entry_path.c_str()) != 0 || !access(entry_path.c_str(), W_OK))
                 {
                     closedir(dir);
                     return false;
@@ -265,13 +263,11 @@ namespace ws
             }
         }
 
-        // Close the directory and remove it
         closedir(dir);
         if (rmdir(path.c_str()) != 0)
         {
             return false;
         }
-
         return true;
     }
     std::string check_file(std::string path, int i = 1)
