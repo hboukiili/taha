@@ -53,10 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ?>
 <!DOCTYPE html>
 <div>
-    <h1>
-        here: <?php echo $_COOKIE['name']; ?>
-        </br>
-    </h1>
     <?php if (isset($_COOKIE['name']) && isset($_COOKIE['email'])): ?>
         <p>
             <center><h1>Hello, <?= $_COOKIE['name'] ?>!</h1></center><hr>
